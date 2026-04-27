@@ -30,13 +30,21 @@ class Predateur(EtreVivant):
             else:
                 print("Rien à manger ici ou la proie est déjà morte.")
         else:
-            print("Trop loin pour manger !")
+            print("Trop loin pour manger ")
 
 class Proie(EtreVivant):
     def __init__(self, x, y, energie):
         super().__init__(x, y, energie)
         self.role = "Zèbre"
 
+
+def saisir(message):
+        while True:
+            try:
+                valeur = int(input(message))
+                return valeur
+            except ValueError:
+                print("Erreur : Veuillez entrer un nombre entier vlide (ex:10)")
 
 
 def initialiser_bdd():
@@ -91,7 +99,6 @@ def charger_simulation():
 if __name__ == "__main__":
     initialiser_bdd()
     
-    
     sauvegarde = charger_simulation()
     
     print("============= CONFIGURATION DE LA SIMULATION ============")
@@ -104,15 +111,15 @@ if __name__ == "__main__":
         lion, zebre = sauvegarde[0], sauvegarde[1]
     else:
         print("\n-------- Paramètres du Lion --------")
-        lx = int(input("Position X du Lion : "))
-        ly = int(input("Position Y du Lion : "))
-        le = int(input("Énergie initiale du Lion : "))
+        lx = saisir("Position X du Lion : ")
+        ly = saisir("Position Y du Lion : ")
+        le = saisir("Énergie initiale du Lion : ")
         lion = Predateur(lx, ly, le)
 
         print("\n-------- Paramètres du Zèbre --------")
-        zx = int(input("Position X du Zèbre : "))
-        zy = int(input("Position Y du Zèbre : "))
-        ze = int(input("Énergie initiale du Zèbre : "))
+        zx = saisir("Position X du Zèbre : ")
+        zy = saisir("Position Y du Zèbre : ")
+        ze = saisir("Énergie initiale du Zèbre : ")
         zebre = Proie(zx, zy, ze)
 
     print("\n\n==============================")
