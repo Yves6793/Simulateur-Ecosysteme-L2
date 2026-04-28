@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur d'Écosystème — UP Parakou</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap');
+  
+  :root {
+    --bg:#0a0f14; --panel:#0f1922; --border:#1e3a4a;
+    --lion:#f87171; --zebre:#4ade80; --plante:#22d3ee;
+    --accent:#facc15; --text:#cbd5e1; --dim:#475569;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  
+  body{
+    background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px;
+  }
+
+  h1{font-size:1.4rem;font-weight:800;color:#fff;text-align:center;}
+  h1 span{color:var(--accent);}
+  .sub{font-size:0.72rem;color:var(--dim);font-family:'Share Tech Mono',monospace;text-align:center;}
+
+  .layout{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%;}
+  
+  .canvas-wrap{border:2px solid var(--border);border-radius:8px;overflow:hidden;background:#0d2b1a;}
+  #grid{display:block;image-rendering:pixelated;}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    padding:14px;display:flex;flex-direction:column;gap:12px;min-width:220px;flex:1;max-width:260px;
+  }
+
+  .sec-title{
+    font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:5px;
+  }
+
+  .stat-row{display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;margin-top:5px;}
+  .stat-label{display:flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .stat-val{font-family:'Share Tech Mono',monospace;font-size:1rem;color:#fff;}
+
+  #chart{width:100%;height:72px;background:#05080a;border-radius:4px;}
+
+  .controls{display:flex;flex-direction:column;gap:8px;}
+  .btn{
+    padding:7px 10px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--text);font-family:'Exo 2',sans-serif;
+    font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.15s;
+  }
+  .btn:hover{background:var(--border);color:#fff;}
+  .btn-start{border-color:var(--zebre);color:var(--zebre);}
+  .btn-start:hover{background:var(--zebre);color:#000;}
+  .btn-reset{border-color:var(--lion);color:var(--lion);}
+  .btn-reset:hover{background:var(--lion);color:#000;}
+
+  .slider-row{display:flex;flex-direction:column;gap:3px;font-size:0.75rem;color:var(--dim);}
+  .slider-row .lbl{display:flex;justify-content:space-between;}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+
+  .legend{display:flex;flex-direction:column;gap:5px;font-size:0.78rem;color:var(--dim);}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .gen{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--dim);text-align:center;margin-top:5px;}
+  .gen span{color:var(--accent);font-size:1.1rem;}
+</style>
+</head>
+<body>
+
+<h1>Simulateur d'<span>Écosystème</span></h1>
+<p class="sub">Lions 🦁 vs Zèbres 🦓 — Projet 2 : Informatique de Gestion</p>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="grid"></canvas></div>
+
+  <div class="panel">
+    <div>
+      <div class="sec-title">Population</div>
+      <div class="stat-row">
+        <span class="stat-label"><span class="dot" style="background:var(--lion)"></span>Lions</span>
+        <span class="stat-val" id="cnt-lion">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label"><span class="dot" style="background:var(--zebre)"></span>Zèbres</span>
+        <span class="stat-val" id="cnt-zebre">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label"><span class="dot" style="background:var(--plante)"></span>Plantes</span>
+        <span class="stat-val" id="cnt-plante">0</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-title">Historique</div>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div>
+      <div class="sec-title">Contrôles</div>
+      <div class="controls">
+        <button class="btn btn-start" id="btn-toggle">▶ Démarrer</button>
+        <button class="btn btn-reset" id="btn-reset">↺ Reset</button>
+        <div class="slider-row">
+          <div class="lbl"><span>Vitesse</span><span id="spd-val">7</span></div>
+          <input type="range" id="speed" min="1" max="20" value="7">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>Taille Grille</span><span id="size-val">40</span></div>
+          <input type="range" id="gridsize" min="20" max="70" value="40">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-title">Légende</div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot" style="background:var(--plante)"></span>Herbe (cyan)</div>
+        <div class="legend-item"><span class="dot" style="background:var(--zebre)"></span>Zèbre (cercle vert)</div>
+        <div class="legend-item"><span class="dot" style="background:var(--lion)"></span>Lion (triangle rouge)</div>
+      </div>
+    </div>
+
+    <div class="gen">Génération <span id="gen">0</span></div>
+  </div>
+</div>
+
+<script>
+// --- LOGIQUE DE SIMULATION (MOTEUR INTERNE) ---
+class EtreVivant {
+  constructor(x, y, energie) {
+    this.x = x; this.y = y; this.energie = energie;
+    this.vivant = true;
+  }
+  vieillir() {
+    this.energie--;
+    if (this.energie <= 0) this.vivant = false;
+  }
+  deplacer(g) {
+    const dx = Math.floor(Math.random() * 3) - 1;
+    const dy = Math.floor(Math.random() * 3) - 1;
+    this.x = (this.x + dx + g.cols) % g.cols;
+    this.y = (this.y + dy + g.rows) % g.rows;
+  }
+}
+
+class Zebre extends EtreVivant {
+  constructor(x,y){ super(x,y,20); }
+  agir(g) {
+    let p = g.plantes.find(pl => pl.x === this.x && pl.y === this.y);
+    if(p){ g.plantes = g.plantes.filter(pl => pl !== p); this.energie += 10; }
+    else { this.deplacer(g); }
+    this.vieillir();
+    if(this.energie > 30) { this.energie -= 15; g.zebres.push(new Zebre(this.x, this.y)); }
+  }
+}
+
+class Lion extends EtreVivant {
+  constructor(x,y){ super(x,y,30); }
+  agir(g) {
+    let z = g.zebres.find(zeb => zeb.vivant && Math.abs(zeb.x-this.x)<=1 && Math.abs(zeb.y-this.y)<=1);
+    if(z){ z.vivant = false; this.energie += 20; }
+    else { this.deplacer(g); }
+    this.vieillir();
+    if(this.energie > 50) { this.energie -= 25; g.lions.push(new Lion(this.x, this.y)); }
+  }
+}
+
+class Grille {
+  constructor(cols, rows) {
+    this.cols=cols; this.rows=rows;
+    this.lions=[]; this.zebres=[]; this.plantes=[]; this.gen=0;
+  }
+  init(nL, nZ, nP) {
+    for(let i=0; i<nL; i++) this.lions.push(new Lion(Math.floor(Math.random()*this.cols), Math.floor(Math.random()*this.rows)));
+    for(let i=0; i<nZ; i++) this.zebres.push(new Zebre(Math.floor(Math.random()*this.cols), Math.floor(Math.random()*this.rows)));
+    for(let i=0; i<nP; i++) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
+  }
+  step() {
+    this.zebres.forEach(z => z.agir(this));
+    this.lions.forEach(l => l.agir(this));
+    this.zebres = this.zebres.filter(z => z.vivant);
+    this.lions = this.lions.filter(l => l.vivant);
+    if(Math.random() < 0.3) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
+    this.gen++;
+  }
+}
+
+// --- RENDU ET DASHBOARD ---
+const canvas = document.getElementById('grid'), ctx = canvas.getContext('2d');
+const chart = document.getElementById('chart'), cctx = chart.getContext('2d');
+let COLS=40, ROWS=28, CELL=13, g, run=false, timer, history={l:[], z:[], p:[]};
+
+function setup() {
+  canvas.width=COLS*CELL; canvas.height=ROWS*CELL;
+  g = new Grille(COLS, ROWS);
+  g.init(10, 40, 100);
+  history={l:[], z:[], p:[]};
+  draw();
+}
+
+function draw() {
+  ctx.fillStyle='#0d2b1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#22d3ee'; g.plantes.forEach(p => ctx.fillRect(p.x*CELL+3, p.y*CELL+3, CELL-6, CELL-6));
+  g.zebres.forEach(z => { ctx.fillStyle='#4ade80'; ctx.beginPath(); ctx.arc(z.x*CELL+CELL/2, z.y*CELL+CELL/2, CELL/2-2, 0, 7); ctx.fill(); });
+  g.lions.forEach(l => { 
+    ctx.fillStyle='#f87171'; ctx.beginPath(); 
+    ctx.moveTo(l.x*CELL+CELL/2, l.y*CELL+2); ctx.lineTo(l.x*CELL+2, l.y*CELL+CELL-2); ctx.lineTo(l.x*CELL+CELL-2, l.y*CELL+CELL-2); 
+    ctx.fill(); 
+  });
+  
+  document.getElementById('cnt-lion').innerText = g.lions.length;
+  document.getElementById('cnt-zebre').innerText = g.zebres.length;
+  document.getElementById('cnt-plante').innerText = g.plantes.length;
+  document.getElementById('gen').innerText = g.gen;
+
+  updateChart();
+}
+
+function updateChart() {
+  history.l.push(g.lions.length); history.z.push(g.zebres.length); history.p.push(g.plantes.length/5);
+  if(history.l.length > 80) { history.l.shift(); history.z.shift(); history.p.shift(); }
+  cctx.fillStyle='#05080a'; cctx.fillRect(0,0,chart.width,chart.height);
+  const drawLine = (data, color) => {
+    cctx.strokeStyle=color; cctx.beginPath();
+    data.forEach((v, i) => { const x=(i/80)*chart.width, y=chart.height-(v/2); i===0?cctx.moveTo(x,y):cctx.lineTo(x,y); });
+    cctx.stroke();
+  };
+  drawLine(history.p, '#22d3ee'); drawLine(history.z, '#4ade80'); drawLine(history.l, '#f87171');
+}
+
+document.getElementById('btn-toggle').onclick = (e) => {
+  run = !run; e.target.innerText = run ? "⏸ Pause" : "▶ Démarrer";
+  if(run) timer = setInterval(() => { g.step(); draw(); }, 1000/document.getElementById('speed').value);
+  else clearInterval(timer);
+};
+
+document.getElementById('btn-reset').onclick = () => { clearInterval(timer); run=false; document.getElementById('btn-toggle').innerText="▶ Démarrer"; setup(); };
+document.getElementById('speed').oninput = (e) => { document.getElementById('spd-val').innerText = e.target.value; if(run) { clearInterval(timer); timer = setInterval(() => { g.step(); draw(); }, 1000/e.target.value); } };
+
+setup();
+</script>
+</body>
+</html>
