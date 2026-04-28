@@ -1,5 +1,5 @@
 Cahier des Charges : Projet Vie Artificielle (L2 IG)
-Binôme : Yves AYIHOSSOU et Carlos TOHOU  
+Binôme : Yves AYIHOSSOU et John Carlos AÏGBEDE  
 Date : 20 avril 2026
 1. Présentation du projet
 Notre équipe a choisi le Projet 2 : Simulateur d'Écosystème. L'objectif est de concevoir un univers virtuel sous forme de grille où des entités biologiques évoluent de manière autonome. Nous avons choisi de modéliser une savane où interagissent des prédateurs (Lions) et des proies(Zèbres).
