@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulateur d'Écosystème — UP Parakou</title>
+<title>Simulateur d'Écosystème — Yves et Carlos</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap');
   
@@ -62,8 +62,6 @@
   .slider-row .lbl{display:flex;justify-content:space-between;}
   input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
 
-  .legend{display:flex;flex-direction:column;gap:5px;font-size:0.78rem;color:var(--dim);}
-  .legend-item{display:flex;align-items:center;gap:6px;}
   .gen{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--dim);text-align:center;margin-top:5px;}
   .gen span{color:var(--accent);font-size:1.1rem;}
 </style>
@@ -71,7 +69,7 @@
 <body>
 
 <h1>Simulateur d'<span>Écosystème</span></h1>
-<p class="sub">Lions 🦁 vs Zèbres 🦓 — Projet 2 : Informatique de Gestion</p>
+<p class="sub">Lions  et Zèbres  — Projet : Informatique de Gestion (Yves & Carlos)</p>
 
 <div class="layout">
   <div class="canvas-wrap"><canvas id="grid"></canvas></div>
@@ -107,19 +105,6 @@
           <div class="lbl"><span>Vitesse</span><span id="spd-val">7</span></div>
           <input type="range" id="speed" min="1" max="20" value="7">
         </div>
-        <div class="slider-row">
-          <div class="lbl"><span>Taille Grille</span><span id="size-val">40</span></div>
-          <input type="range" id="gridsize" min="20" max="70" value="40">
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="sec-title">Légende</div>
-      <div class="legend">
-        <div class="legend-item"><span class="dot" style="background:var(--plante)"></span>Herbe (cyan)</div>
-        <div class="legend-item"><span class="dot" style="background:var(--zebre)"></span>Zèbre (cercle vert)</div>
-        <div class="legend-item"><span class="dot" style="background:var(--lion)"></span>Lion (triangle rouge)</div>
       </div>
     </div>
 
@@ -128,14 +113,17 @@
 </div>
 
 <script>
-// --- LOGIQUE DE SIMULATION (MOTEUR INTERNE) ---
+let lastAges = { lion: 0, zebre: 0 }; 
+
 class EtreVivant {
   constructor(x, y, energie) {
     this.x = x; this.y = y; this.energie = energie;
     this.vivant = true;
+    this.age = 0; 
   }
   vieillir() {
     this.energie--;
+    this.age++; // 
     if (this.energie <= 0) this.vivant = false;
   }
   deplacer(g) {
@@ -179,16 +167,30 @@ class Grille {
     for(let i=0; i<nP; i++) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
   }
   step() {
-    this.zebres.forEach(z => z.agir(this));
-    this.lions.forEach(l => l.agir(this));
+   
+    if (this.lions.length === 0 && this.zebres.length === 0) {
+      this.stopSimulation();
+      return;
+    }
+
+    this.zebres.forEach(z => { z.agir(this); lastAges.zebre = z.age; });
+    this.lions.forEach(l => { l.agir(this); lastAges.lion = l.age; });
+
     this.zebres = this.zebres.filter(z => z.vivant);
     this.lions = this.lions.filter(l => l.vivant);
+    
     if(Math.random() < 0.3) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
     this.gen++;
   }
+
+  stopSimulation() {
+    run = false;
+    clearInterval(timer);
+    document.getElementById('btn-toggle').innerText = "▶ Démarrer";
+    alert(`FIN DE LA SIMULATION\n--------------------------\nGénérations : ${this.gen}\nÂge du dernier Lion : ${lastAges.lion}\nÂge du dernier Zèbre : ${lastAges.zebre}`);
+  }
 }
 
-// --- RENDU ET DASHBOARD ---
 const canvas = document.getElementById('grid'), ctx = canvas.getContext('2d');
 const chart = document.getElementById('chart'), cctx = chart.getContext('2d');
 let COLS=40, ROWS=28, CELL=13, g, run=false, timer, history={l:[], z:[], p:[]};
@@ -198,6 +200,7 @@ function setup() {
   g = new Grille(COLS, ROWS);
   g.init(10, 40, 100);
   history={l:[], z:[], p:[]};
+  lastAges = { lion: 0, zebre: 0 };
   draw();
 }
 
@@ -215,7 +218,6 @@ function draw() {
   document.getElementById('cnt-zebre').innerText = g.zebres.length;
   document.getElementById('cnt-plante').innerText = g.plantes.length;
   document.getElementById('gen').innerText = g.gen;
-
   updateChart();
 }
 
@@ -238,7 +240,10 @@ document.getElementById('btn-toggle').onclick = (e) => {
 };
 
 document.getElementById('btn-reset').onclick = () => { clearInterval(timer); run=false; document.getElementById('btn-toggle').innerText="▶ Démarrer"; setup(); };
-document.getElementById('speed').oninput = (e) => { document.getElementById('spd-val').innerText = e.target.value; if(run) { clearInterval(timer); timer = setInterval(() => { g.step(); draw(); }, 1000/e.target.value); } };
+document.getElementById('speed').oninput = (e) => { 
+  document.getElementById('spd-val').innerText = e.target.value; 
+  if(run) { clearInterval(timer); timer = setInterval(() => { g.step(); draw(); }, 1000/e.target.value); } 
+};
 
 setup();
 </script>

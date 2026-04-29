@@ -1,159 +1,150 @@
 import sqlite3
 import os
-import time
 import webbrowser
+import time
 
-class EtreVivant(object):
+
+class EtreVivant:
     def __init__(self, x, y, energie):
-        self.x, self.y, self.energie = x, y, energie
-        self.age = 0
+        self.x = x
+        self.y = y
+        self.energie = energie
         self.est_vivant = True
 
     def se_deplacer(self, dx, dy):
+        if not self.est_vivant: return
         self.x += dx
         self.y += dy
         self.energie -= 1
-        if self.energie <= 0: self.est_vivant = False
+        print(f"   Deplacement vers ({self.x}, {self.y}). Energie restante : {self.energie}")
+        if self.energie <= 0:
+            self.est_vivant = False
+            print(f"   L'entite en ({self.x},{self.y}) est morte d'epuisement.")
 
-    def vieillir(self) -> None:
-        self.age += 1
-        self.energie -= 1
-        if self.energie <= 0: self.est_vivant = False
+    def afficher_etat(self):
+        statut = "Vivant" if self.est_vivant else "Mort"
+        print(f"   {self.role} Pos: ({self.x},{self.y}) | Energie: {self.energie} | {statut}")
 
 class Predateur(EtreVivant):
     def __init__(self, x, y, energie):
         super().__init__(x, y, energie)
         self.role = "Lion"
 
-    def manger(self, cible):
-        print(f"\n[ANALYSE] Tentative d'interaction à la position ({self.x},{self.y})...")
-        time.sleep(1) 
+    def chasser(self, cible):
+        if not self.est_vivant:
+            print("   Le Lion est mort, il ne peut plus chasser.")
+            return False
+
+      
         if self.x == cible.x and self.y == cible.y:
             if isinstance(cible, Proie) and cible.est_vivant:
-                print(f" >>> SUCCESS: Le {self.role} a capturé la proie !")
-                self.energie += cible.energie  
-                cible.est_vivant = False       
-                cible.energie = 0
-                return f"SUCCÈS : Le {self.role} a mangé le {cible.role}."
+                print(f"   [ALERTE] Le Lion a intercepte le Zebre en ({self.x}, {self.y}) et l'a mange")
+                self.energie += cible.get_apport_nutritif()
+                cible.mourir()
+                return True
             else:
-                return "ÉCHEC : Cible introuvable ou déjà morte."
+                print("   La cible est deja morte ou absente.")
+        
+        # Cas ou les coordonnees ne coincident pas
         else:
-            return "ÉCHEC : Distance trop grande pour chasser."
+            print(f"   Le Lion n'a pas pu manger le Zebre .")
+            print(f"   Le Zebre est toujours en vie en ({cible.x}, {cible.y}).")
+        
+        return False
 
 class Proie(EtreVivant):
     def __init__(self, x, y, energie):
         super().__init__(x, y, energie)
-        self.role = "Zèbre"
+        self.role = "Zebre"
 
-# --- BLOC 5 : QUALITÉ & SÉCURITÉ ---
-def saisir_securise(message):
-    """Gère les exceptions de saisie (Bloc 5)."""
+    def brouter(self):
+        if self.est_vivant:
+            gain = 5
+            self.energie += gain
+            print(f"   Le Zebre broute paisiblement. Gain d'energie : +{gain} (Total: {self.energie})")
+        else:
+            print("   Un zebre mort ne peut plus brouter.")
+
+    def get_apport_nutritif(self):
+        return self.energie
+
+    def mourir(self):
+        self.est_vivant = False
+        self.energie = 0
+
+
+def saisir(message):
     while True:
         try:
             valeur = int(input(message))
-            if valeur < 0:
-                print("Veuillez entrer un nombre positif.")
-                continue
+            if valeur < 0: raise ValueError
             return valeur
         except ValueError:
-            print("Erreur : Entrez un entier valide (chiffres uniquement).")
+            print(" Erreur : Entrez un nombre entier positif.")
 
-class TestsQualite:
-    """Tests unitaires pour valider la logique POO (Bloc 5)."""
-    @staticmethod
-    def lancer_tests():
-        print("\n[TESTS] Vérification des systèmes...")
-        # Test de prédation
-        l = Predateur(1, 1, 10)
-        z = Proie(1, 1, 5)
-        l.manger(z)
-        assert l.energie == 15, "Erreur de calcul d'énergie"
-        assert z.est_vivant is False, "Erreur de statut de la proie"
-        print("[TESTS] Logique de combat : OK")
-        print("[TESTS] Tous les tests ont réussi !\n")
-
-# --- BLOC 4 : PERSISTANCE ---
-def initialiser_bdd():
+def gerer_bdd(lion, zebre, action):
     conn = sqlite3.connect('ecosysteme.db')
     cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS entites 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT, x INTEGER, y INTEGER, energie INTEGER, est_vivant INTEGER)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS simulation 
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                      lion_e INTEGER, zebre_e INTEGER, action TEXT)''')
+    cursor.execute("INSERT INTO simulation (lion_e, zebre_e, action) VALUES (?, ?, ?)",
+                   (lion.energie, zebre.energie, action))
     conn.commit()
     conn.close()
 
-def sauvegarder_simulation(lion, zebre):
-    conn = sqlite3.connect('ecosysteme.db')
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM entites')
-    for animal in [lion, zebre]:
-        cursor.execute('''INSERT INTO entites (role, x, y, energie, est_vivant) 
-                         VALUES (?, ?, ?, ?, ?)''', (animal.role, animal.x, animal.y, animal.energie, 1 if animal.est_vivant else 0))
-    conn.commit()
-    conn.close()
-    print("\n[SYSTÈME] Données synchronisées avec ecosysteme.db")
+def lancer_interface():
+    print("\nINTERFACE : Analyse des donnees terminee. Lancement du dashboard...")
+    time.sleep(1)
+    chemin = os.path.abspath("templates/index.html")
+    if os.path.exists(chemin):
+        webbrowser.open(f"file:///{chemin}")
+    else:
+        print(" Erreur : Fichier templates/index.html non trouve.")
 
-# --- BLOC 6 : INTERFACE & LIVRAISON ---
-def generer_rapport(lion, zebre, message_log):
-    chemin_modele = os.path.join("templates", "index.html")
-    if not os.path.exists(chemin_modele):
-        print(f"\n[ERREUR] Modèle introuvable dans {chemin_modele}")
-        return
 
-    with open(chemin_modele, "r", encoding="utf-8") as f:
-        contenu = f.read()
-
-    # Remplacement dynamique
-    remplacements = {
-        "{{MESSAGE}}": message_log,
-        "{{LION_X}}": str(lion.x),
-        "{{LION_Y}}": str(lion.y),
-        "{{LION_ENERGIE}}": str(lion.energie),
-        "{{ZEBRE_X}}": str(zebre.x),
-        "{{ZEBRE_Y}}": str(zebre.y),
-        "{{ZEBRE_ENERGIE}}": str(zebre.energie),
-        "{{ZEBRE_STATUS}}": "VIVANT" if zebre.est_vivant else "MORT",
-        "{{ZEBRE_CLASS}}": "alive" if zebre.est_vivant else "dead"
-    }
-
-    for balise, valeur in remplacements.items():
-        contenu = contenu.replace(balise, valeur)
-
-    with open("resultat.html", "w", encoding="utf-8") as f:
-        f.write(contenu)
-    
-    print("[VUE] Rapport 'resultat.html' généré.")
-    webbrowser.open("file://" + os.path.realpath("resultat.html"))
-
-# --- EXÉCUTION PRINCIPALE ---
 if __name__ == "__main__":
-    initialiser_bdd()
+    print(" ==========CONFIGURATIN DE LA SIMULATION ========== \n")
     
-    # Lancement automatique des tests du Bloc 5
-    TestsQualite.lancer_tests()
-
-    print("="*50)
-    print("      MONITEUR D'ÉCOSYSTÈME - UNIVERSITY OF PARAKOU")
+    print("\n       SIMULATEUR ECOSYSTEM")
+    print("       Yves AYIHOSSOU & Carlos AIGBEDE \n")
     print("="*50)
 
-    print("\n--- CONFIGURATION DES ENTITÉS ---")
-    lx = saisir_securise("Position X Lion : ") 
-    ly = saisir_securise("Position Y Lion : ") 
-    le = saisir_securise("Energie Lion : ")
-    lion = Predateur(lx, ly, le)  
+    print("\n-------- PHASE 1 : CONFIGURATION --------")
     
     
-    zx = saisir_securise("Position X Zèbre : ")
-    zy = saisir_securise("Position Y Zèbre : ") 
-    ze = saisir_securise("Energie Zèbre : ")
+    lx = saisir("Position X du Lion : ")
+    ly = saisir("Position Y du Lion : ")
+    le = saisir("Energie initiale du Lion : ")
+    lion = Predateur(lx, ly, le)
+    
+    zx = saisir("Position X du Zebre : ")
+    zy = saisir("Position Y du Zebre : ")
+    ze = saisir("Energie initiale du Zebre : ")
     zebre = Proie(zx, zy, ze)
 
-    log_action = lion.manger(zebre)
-
-    print("\n" + "="*50)
-    print("              BILAN DE L'OPÉRATION")
-    print("="*50)
-    print(f"STATUT LION  : {'VIVANT' if lion.est_vivant else 'MORT'} | ÉNERGIE: {lion.energie}")
-    print(f"STATUT ZÈBRE : {'VIVANT' if zebre.est_vivant else 'MORT'} | ÉNERGIE: {zebre.energie}")
+    print("\n-------- PHASE 2 : ACTIONS DANS LA SAVANE --------\n")
+    lion.afficher_etat()
+    zebre.afficher_etat()
     
-    sauvegarder_simulation(lion, zebre)
-    generer_rapport(lion, zebre, log_action)
+    print("\nAction 1")
+    zebre.brouter()
+    
+    print("\nAction 2")
+    dx = saisir("Deplacement X du Lion pour chasser : ")
+    dy = saisir("Deplacement Y du Lion pour chasser : ")
+    lion.se_deplacer(dx, dy)
+    
+    print("\nAction 3")
+    succes = lion.chasser(zebre)
+    
+    
+    msg = "Chasse reussie" if succes else "La proie a survecu"
+    gerer_bdd(lion, zebre, msg)
+    
+    print("\n-------- RESULTAT FINAL --------")
+    lion.afficher_etat()
+    zebre.afficher_etat()
+    
+    
+    lancer_interface()

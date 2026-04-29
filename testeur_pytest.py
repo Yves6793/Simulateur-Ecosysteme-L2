@@ -1,61 +1,79 @@
 import random
-from entites import Predateur, Proie, saisir
+from entites import Predateur, Proie
 
-def test_aleatoire():
-    print("\n --- MODE TEST ALÉATOIRE ---")
+def saisir(message):
+    
+    while True:
+        try:
+            return int(input(message))
+        except ValueError:
+            print("Erreur : Veuillez entrer un nombre entier.")
 
-    lx, ly = random.randint(0, 20), random.randint(0, 20)
-    zx, zy = random.randint(0, 20), random.randint(0, 20)
+def mode_aleatoire():
+    print("\n--------- MODE ALEATOIRE ACTIVE --------")
+    lx, ly = random.randint(0, 5), random.randint(0, 5)
+    zx, zy = random.randint(0, 5), random.randint(0, 5)
+    le, ze = 15, 10
+    print(f"Lion genere en ({lx}, {ly}) | Zebre genere en ({zx}, {zy})")
     
- 
-    lion = Predateur(lx, ly, 50)
-    zebre = Proie(zx, zy, 20)
+    lion = Predateur(lx, ly, le)
+    zebre = Proie(zx, zy, ze)
     
-    print(f"Lion placé en ({lx}, {ly}) avec 50 d'énergie.")
-    print(f"Zèbre placé en ({zx}, {zy}) avec 20 d'énergie.")
-    
-    print("\nAction : Tentative de chasse.")
-    lion.manger(zebre)
-    
-    if not zebre.est_vivant:
-        print("Résultat : Le lion a réussi sa chasse !")
-    else:
-        print(" Résultat : Le zèbre est trop loin, il a survécu.")
+    dx, dy = random.randint(-1, 1), random.randint(-1, 1)
+    print(f"Mouvement automatique du Lion : dx={dx}, dy={dy}")
+    return lion, zebre, dx, dy
 
-def test_manuel():
-    print("\n --- MODE RÉCUPÉRATION DES DONNÉES (MANUEL) ---")
+def mode_manuel():
+    print("\n-------- MODE SAISIE UTILISATEUR ACTIVE --------")
     
     lx = saisir("Position X du Lion : ")
     ly = saisir("Position Y du Lion : ")
-    le = saisir("Énergie du Lion : ")
-    lion = Predateur(lx, ly, le)
+    le = saisir("Energie initiale du Lion : ")
     
-    zx = saisir("Position X du Zèbre : ")
-    zy = saisir("Position Y du Zèbre : ")
-    ze = saisir("Énergie du Zèbre : ")
+    zx = saisir("Position X du Zebre : ")
+    zy = saisir("Position Y du Zebre : ")
+    ze = saisir("Energie initiale du Zebre : ")
+    
+    lion = Predateur(lx, ly, le)
     zebre = Proie(zx, zy, ze)
     
-    print("\nAction : Simulation avec vos données...")
-    lion.manger(zebre)
+    print("\nPositions actuelles :")
+    lion.afficher_etat()
+    zebre.afficher_etat()
+
+    print("\n--------- SAISIE DU MOUVEMENT ---------")
+    print(f"Rappel : Le Zebre est en ({zebre.x}, {zebre.y})")
+    dx = saisir("Entrez dx (deplacement X) pour le Lion : ")
+    dy = saisir("Entrez dy (deplacement Y) pour le Lion : ")
     
-    if not zebre.est_vivant:
-        print(" Résultat : Capture réussie !")
+    return lion, zebre, dx, dy
+
+def executer_test():
+
+    print("1. Lancer une simulation ALEATOIRE")
+    print("2. Lancer une simulation MANUELLE")
+    choix = input("\nVotre choix (1 ou 2) : ")
+    
+    if choix == "1":
+        lion, zebre, dx, dy = mode_aleatoire()
     else:
-        print("Résultat : Échec de la capture.")
+        lion, zebre, dx, dy = mode_manuel()
+
+    print("\n-------- EXECUTION DES ACTIONS --------")
+    zebre.brouter()
+    lion.se_deplacer(dx, dy)
+
+    print("\n-------- PHASE DE CHASSE --------")
+    succes = lion.chasser(zebre)
+    
+    print("\n--------- BILAN FINAL --------")
+    if succes:
+        print("RESULTAT : REUSSITE - Le Lion a mange le Zebre ")
+    else:
+        print("RESULTAT : ECHEC - Le Zebre est toujours en vie.")
+    
+    lion.afficher_etat()
+    zebre.afficher_etat()
 
 if __name__ == "__main__":
-    print("============================================")
-    print("      MODULE DE TEST - ÉCOSYSTÈME L2        ")
-    print("============================================")
-    print("1. Lancer un test ALÉATOIRE")
-    print("2. SAISIR manuellement les données")
-    
-    
-    choix = saisir("\nVotre choix (1 ou 2) : ")
-    
-    if choix == 1:
-        test_aleatoire()
-    elif choix == 2:
-        test_manuel()
-    else:
-        print("Choix invalide. Veuillez relancer le testeur.")
+    executer_test()
