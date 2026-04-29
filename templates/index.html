@@ -69,7 +69,7 @@
 <body>
 
 <h1>Simulateur d'<span>Écosystème</span></h1>
-<p class="sub">Lions  et Zèbres  — Projet : Informatique de Gestion (Yves & Carlos)</p>
+<p class="sub">Lions et Zèbres — Projet : Informatique de Gestion (Yves & Carlos)</p>
 
 <div class="layout">
   <div class="canvas-wrap"><canvas id="grid"></canvas></div>
@@ -123,7 +123,7 @@ class EtreVivant {
   }
   vieillir() {
     this.energie--;
-    this.age++; // 
+    this.age++; 
     if (this.energie <= 0) this.vivant = false;
   }
   deplacer(g) {
@@ -138,21 +138,31 @@ class Zebre extends EtreVivant {
   constructor(x,y){ super(x,y,20); }
   agir(g) {
     let p = g.plantes.find(pl => pl.x === this.x && pl.y === this.y);
-    if(p){ g.plantes = g.plantes.filter(pl => pl !== p); this.energie += 10; }
+    if(p){ 
+        g.plantes = g.plantes.filter(pl => pl !== p); 
+        this.energie += 12; // Un peu plus d'énergie pour favoriser la reproduction
+    }
     else { this.deplacer(g); }
     this.vieillir();
-    if(this.energie > 30) { this.energie -= 15; g.zebres.push(new Zebre(this.x, this.y)); }
+    // LOGIQUE DE REPRODUCTION VISUELLE
+    if(this.energie > 35) { 
+        this.energie -= 15; 
+        g.zebres.push(new Zebre(this.x, this.y)); 
+    }
   }
 }
 
 class Lion extends EtreVivant {
-  constructor(x,y){ super(x,y,30); }
+  constructor(x,y){ super(x,y,35); }
   agir(g) {
     let z = g.zebres.find(zeb => zeb.vivant && Math.abs(zeb.x-this.x)<=1 && Math.abs(zeb.y-this.y)<=1);
-    if(z){ z.vivant = false; this.energie += 20; }
+    if(z){ z.vivant = false; this.energie += 25; }
     else { this.deplacer(g); }
     this.vieillir();
-    if(this.energie > 50) { this.energie -= 25; g.lions.push(new Lion(this.x, this.y)); }
+    if(this.energie > 60) { 
+        this.energie -= 30; 
+        g.lions.push(new Lion(this.x, this.y)); 
+    }
   }
 }
 
@@ -167,19 +177,19 @@ class Grille {
     for(let i=0; i<nP; i++) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
   }
   step() {
-   
     if (this.lions.length === 0 && this.zebres.length === 0) {
       this.stopSimulation();
       return;
     }
 
-    this.zebres.forEach(z => { z.agir(this); lastAges.zebre = z.age; });
-    this.lions.forEach(l => { l.agir(this); lastAges.lion = l.age; });
+    this.zebres.forEach(z => { z.agir(this); lastAges.zebre = Math.max(lastAges.zebre, z.age); });
+    this.lions.forEach(l => { l.agir(this); lastAges.lion = Math.max(lastAges.lion, l.age); });
 
     this.zebres = this.zebres.filter(z => z.vivant);
     this.lions = this.lions.filter(l => l.vivant);
     
-    if(Math.random() < 0.3) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
+    // Repousse des plantes (accélérée pour soutenir la reproduction)
+    if(Math.random() < 0.5) this.plantes.push({x:Math.floor(Math.random()*this.cols), y:Math.floor(Math.random()*this.rows)});
     this.gen++;
   }
 
@@ -187,7 +197,7 @@ class Grille {
     run = false;
     clearInterval(timer);
     document.getElementById('btn-toggle').innerText = "▶ Démarrer";
-    alert(`FIN DE LA SIMULATION\n--------------------------\nGénérations : ${this.gen}\nÂge du dernier Lion : ${lastAges.lion}\nÂge du dernier Zèbre : ${lastAges.zebre}`);
+    alert(`FIN DE LA SIMULATION\n--------------------------\nGénérations : ${this.gen}\nÂge max Lion : ${lastAges.lion}\nÂge max Zèbre : ${lastAges.zebre}`);
   }
 }
 
@@ -198,7 +208,7 @@ let COLS=40, ROWS=28, CELL=13, g, run=false, timer, history={l:[], z:[], p:[]};
 function setup() {
   canvas.width=COLS*CELL; canvas.height=ROWS*CELL;
   g = new Grille(COLS, ROWS);
-  g.init(10, 40, 100);
+  g.init(8, 30, 80);
   history={l:[], z:[], p:[]};
   lastAges = { lion: 0, zebre: 0 };
   draw();
